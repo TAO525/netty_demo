@@ -24,12 +24,40 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-
-
+        Channel income = ctx.channel();
+        channels.writeAndFlush("[server] - "+income.remoteAddress() + "离开\n");
+        channels.remove(ctx.channel());
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-
+        Channel income = ctx.channel();
+        for(Channel channel:channels) {
+            if (channel != income) {
+                channel.writeAndFlush("[" + income.remoteAddress() + "]" + msg + "\n");
+            } else {
+                channel.writeAndFlush("[you]" + msg + "\n");
+            }
+        }
     }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception { // (5)
+            Channel incoming = ctx.channel();
+            System.out.println("SimpleChatClient:"+incoming.remoteAddress()+"在线");
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception { // (6)
+            Channel incoming = ctx.channel();
+            System.out.println("SimpleChatClient:"+incoming.remoteAddress()+"掉线");
+        }
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) { // (7)
+            Channel incoming = ctx.channel();
+            System.out.println("SimpleChatClient:"+incoming.remoteAddress()+"异常");
+            // 当出现异常就关闭连接
+            cause.printStackTrace();
+            ctx.close();
+        }
 }
